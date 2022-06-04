@@ -9,13 +9,15 @@ import net.mamoe.mirai.console.command.SimpleCommand
 import net.mamoe.mirai.contact.Contact.Companion.sendImage
 import net.mamoe.mirai.event.events.MessageEvent
 import net.mamoe.mirai.message.data.Image
+import net.mamoe.mirai.message.data.Image.Key.queryUrl
 import net.mamoe.mirai.message.data.MessageSource.Key.quote
 import net.mamoe.mirai.message.data.PlainText
 import net.mamoe.mirai.message.data.firstIsInstanceOrNull
 import net.mamoe.mirai.message.nextMessage
 import net.mamoe.mirai.utils.ExternalResource.Companion.toExternalResource
 import org.echoosx.mirai.plugin.MiraiLowPoly
-import java.awt.image.BufferedImage
+import java.net.URL
+import javax.imageio.ImageIO
 
 object GenerateLowPolyCommand:SimpleCommand(
     MiraiLowPoly,
@@ -27,7 +29,7 @@ object GenerateLowPolyCommand:SimpleCommand(
     @Handler
     suspend fun CommandSenderOnMessage<MessageEvent>.handle(accuracy:Int = 100,pointCount:Int = 200){
         try{
-            val image = this.fromEvent.getOrWaitImage()
+            val image = ImageIO.read(URL(this.fromEvent.getOrWaitImage()?.queryUrl()))
 
             val resource = LowPoly.generate(
                 image,
@@ -49,7 +51,7 @@ object GenerateLowPolyCommand:SimpleCommand(
         }
     }
 
-    private suspend fun MessageEvent.getOrWaitImage(): BufferedImage? {
+    private suspend fun MessageEvent.getOrWaitImage(): Image? {
         return (message.takeIf { m -> m.contains(Image) } ?: runCatching {
             subject.sendMessage("请在30s内发送图片")
             nextMessage(30_000) { event -> event.message.contains(Image) }
@@ -61,6 +63,6 @@ object GenerateLowPolyCommand:SimpleCommand(
                 }
                 else -> throw e
             }
-        }).firstIsInstanceOrNull<Image>() as BufferedImage
+        }).firstIsInstanceOrNull<Image>()
     }
 }
